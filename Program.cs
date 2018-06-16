@@ -14,6 +14,7 @@ namespace KeyGenerator {
 		static string lastKey = String.Format("{0}{0}{0}{0}{0}{0}{0}{0}{0}{0}{0}{0}{0}{0}{0}{0}{0}{0}{0}{0}", valid[0]);
 		static int match = 25000000;
 		static string datpath;
+		static string keypath;
 		static double step = 1000000;
 
 		//
@@ -27,7 +28,7 @@ namespace KeyGenerator {
 				match = int.Parse(args[0]);
 			}
 
-			string keypath = Environment.CurrentDirectory + "/keys"+match+".txt";
+			keypath = Environment.CurrentDirectory + "/keys"+match+".txt";
 			if(!File.Exists(keypath))
 				File.Create(keypath).Close();
 
