@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -60,24 +61,24 @@ namespace KeyGenerator {
 			for(j = lastIndex + 1; j < maxIter;) {
 				stopwatch.Restart();
 
-				var steps = new string[10];
+				var steps = new bool[10];
 				for (int b = 0; b < steps.Length; b++) {
 					steps[b] = execOneStep(b, i, j);
 				}
 
 				j += step * steps.Length;
 
-				var found = steps.Where(s => s != null);
-                if (found.Count() > 0) {
-                    foreach (var item in found) {
+                if (steps.Contains(true)) {
+                    foreach (var item in keysInBatch) {
                         Console.WriteLine(item + "\t: " + ++keysFound);
                         using (StreamWriter sw = File.AppendText(keypath)) {
                             sw.Write(lastKey + "\n");
                         }
                     }
+					keysInBatch.Clear();
                 }
 
-				Console.Write($"\n{compile(i)}\t: {j}\t{(j / maxIter * 100)}%\t={calc(i)}\t[{stopwatch.ElapsedMilliseconds}ms] keys:{keysFound}");
+				Console.Write($"\n{(j / maxIter * 100)}%\t[{stopwatch.ElapsedMilliseconds}ms] keys:{keysFound}");
 				stopwatch.Stop();
 
 				//SaveProgress
@@ -87,20 +88,27 @@ namespace KeyGenerator {
 			}
 		}
 
-        private static string execOneStep(double mod, byte[] i, double j) {
+		static List<string> keysInBatch = new List<string>();
+
+        private static bool execOneStep(double mod, byte[] i, double j) {
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
+
+			bool result = false;
 
 			j += step*mod;
 			double max = j+step;
 			for (; j < max; j++) {
-				if(calc(i) == match) { return compile(i); }
+                if (calc(i) == match) {
+                    keysInBatch.Add(compile(i));
+                    result = true;
+                }
 				i = iterateThrough(i);
 			}
 
             Console.Write($"\n{compile(i)}\t: {j}\t={calc(i)}\t[{stopwatch.ElapsedMilliseconds}ms]");
             stopwatch.Stop();
-			return null;
+			return result;
 		}
 
 		private static byte[] iterateThrough(byte[] i) {
