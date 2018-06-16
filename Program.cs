@@ -1,12 +1,12 @@
 ﻿using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace KeyGenerator {
 	class Program {
-		static System.Diagnostics.Stopwatch stopwatch = new System.Diagnostics.Stopwatch();
-
 		//
 		// Parameters
 		//
@@ -46,45 +46,61 @@ namespace KeyGenerator {
 				catch(InvalidOperationException) { }
 
 			Console.WriteLine(datpath);
-			stopwatch.Start();
-			while(lastKey != "ZZZZZZZZZZZZZZZZZZZZ") {
-				lastKey = generateNextKey(lastKey);
-				Console.WriteLine(lastKey + "\t: "+lastIndex + "\t" + ++keysFound);
-				using(StreamWriter sw = File.AppendText(keypath)) {
-					sw.Write(lastIndex+"\t"+lastKey+"\n");
-				}
-			}
+
+			generateNextKey(lastKey);
 		}
 
-		private static string generateNextKey(string lastKey) {
+		private async static void generateNextKey(string lastKey) {
 			byte[] i = Array.ConvertAll(lastKey.ToCharArray(), x => (byte)x);
 			i = iterateThrough(i);
 
+			var stopwatch = new Stopwatch();
+
 			double j,maxIter = Math.Pow(256, 20) - 1;
-			for(j = lastIndex + 1; j < maxIter; j++) {
-				if(j % step == 0) {
-					printProgress(i, j, maxIter);
+			for(j = lastIndex + 1; j < maxIter;) {
+				stopwatch.Restart();
+
+				var steps = new string[10];
+				for (int b = 0; b < steps.Length; b++) {
+					steps[b] = execOneStep(b, i, j);
 				}
-				if(j % (step*10) == 0) {
-					double progressJ = j,
-						   progressFound = keysFound;
-					string progressKey = compile(i);
-					new Thread(() => {//saveProgress
-						using(StreamWriter sw = new StreamWriter(datpath, false))
-							sw.Write(progressJ + "\t" + progressKey + "\t" + progressFound + "\r\n");
-						Console.Write("\t✓");
-					}).Start();
-				}
-				if(calc(i) == match) break;
-				i = iterateThrough(i);
+
+				j += step * steps.Length;
+
+				var found = steps.Where(s => s != null);
+                if (found.Count() > 0) {
+                    foreach (var item in found) {
+                        Console.WriteLine(item + "\t: " + ++keysFound);
+                        using (StreamWriter sw = File.AppendText(keypath)) {
+                            sw.Write(lastKey + "\n");
+                        }
+                    }
+                }
+
+				Console.Write($"\n{compile(i)}\t: {j}\t{(j / maxIter * 100)}%\t={calc(i)}\t[{stopwatch.ElapsedMilliseconds}ms] keys:{keysFound}");
+				stopwatch.Stop();
+
+				//SaveProgress
+				using(StreamWriter sw = new StreamWriter(datpath, false))
+					sw.Write(j + "\t" + compile(i) + "\t" + keysFound + "\r\n");
+				Console.Write("\t✓");
 			}
-			lastIndex = j;
-			return compile(i);
 		}
 
-		private static void printProgress(byte[] i, double j, double maxIter){
-            Console.Write("\n{0}\t: {1}\t{2}%\t={3}\t[{4}ms] keys:{5}", compile(i), j, (j / maxIter * 100), calc(i), stopwatch.ElapsedMilliseconds, keysFound);
-            stopwatch.Restart();
+        private static string execOneStep(double mod, byte[] i, double j) {
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
+
+			j += step*mod;
+			double max = j+step;
+			for (; j < max; j++) {
+				if(calc(i) == match) { return compile(i); }
+				i = iterateThrough(i);
+			}
+
+            Console.Write($"\n{compile(i)}\t: {j}\t={calc(i)}\t[{stopwatch.ElapsedMilliseconds}ms]");
+            stopwatch.Stop();
+			return null;
 		}
 
 		private static byte[] iterateThrough(byte[] i) {
