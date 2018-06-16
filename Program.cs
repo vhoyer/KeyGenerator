@@ -68,13 +68,9 @@ namespace KeyGenerator {
 
 				j += step * steps.Length;
 
-                if (steps.Contains(true)) {
-                    foreach (var item in keysInBatch) {
-                        Console.WriteLine(item + "\t: " + ++keysFound);
-                        using (StreamWriter sw = File.AppendText(keypath)) {
-                            sw.Write(lastKey + "\n");
-                        }
-                    }
+                if (keysInBatch.Count > 0) {
+					keysFound += keysInBatch.Count;
+					File.AppendAllLines(keypath, keysInBatch);
 					keysInBatch.Clear();
                 }
 
