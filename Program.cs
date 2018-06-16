@@ -24,6 +24,7 @@ namespace KeyGenerator {
 		static byte currentUsingValidIndex = 0;
 		static double lastIndex = 0;
 		static double keysFound = 0;
+
 		static void Main(string[] args) {
 			if(args.Length == 1) {
 				match = int.Parse(args[0]);
@@ -76,7 +77,7 @@ namespace KeyGenerator {
 					keysInBatch.Clear();
                 }
 
-				Console.Write($"\n{(j / maxIter * 100)}%\t[{stopwatch.ElapsedMilliseconds}ms] keys:{keysFound}");
+				Console.Write($"\n{compile(i)}\t{(j / maxIter * 100)}%\t[{stopwatch.ElapsedMilliseconds}ms] keys:{keysFound}");
 
 				//SaveProgress
 				using(StreamWriter sw = new StreamWriter(datpath, false))
@@ -88,8 +89,8 @@ namespace KeyGenerator {
 		static List<string> keysInBatch = new List<string>();
 
         private static void execOneStep(double mod, byte[] i, double j) {
-            Stopwatch stopwatch = new Stopwatch();
-            stopwatch.Start();
+            //Stopwatch stopwatch = new Stopwatch();
+            //stopwatch.Start();
 
 			j += step*mod;
 			double max = j+step;
@@ -100,8 +101,8 @@ namespace KeyGenerator {
 				i = iterateThrough(i);
 			}
 
-            Console.Write($"\n{compile(i)}\t: {j}\t={calc(i)}\t[{stopwatch.ElapsedMilliseconds}ms]");
-            stopwatch.Stop();
+            //Console.Write($"\n{compile(i)}\t: {j}\t={calc(i)}\t[{stopwatch.ElapsedMilliseconds}ms]");
+            //stopwatch.Stop();
 		}
 
 		private static byte[] iterateThrough(byte[] i) {
